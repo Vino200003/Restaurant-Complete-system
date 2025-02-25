@@ -2,8 +2,9 @@ const models = require('../models');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { where } = require('sequelize');
+const user = require('../models/user');
 
-
+//Sign Up
 function signUp(req, res){
 
     models.User.findOne({where:{email:req.body.email}}).then(result => {
@@ -44,12 +45,46 @@ function signUp(req, res){
         res.status(500).json({
             message: "Something went wrong",
     });
-});
-
-    
+});    
 }
 
 
+function login(req, res){
+    models.User.findOne({where:{email: req.body.email}}).then(user => {
+        if(user === null){
+            res.status(401).json({
+                message: "Invalid credentials!",
+        });
+        }else{
+            bcryptjs.compare(req.body.password, user.password, function(err, result){
+                if(result){
+                    const token = jwt.sign({
+                        email: user.email,
+                        userId: user.userId,
+                        role: user.role
+                    }, 'secret', function(err, token){
+                        res.status(200).json({
+                            message: "Authentication succesful!",
+                            token: token
+                        });
+                    });
+                }else{
+                    res.status(401).json({
+                        message: "Invalid credentials!",
+                });
+                }
+            });
+        }
+    }).catch(error => {
+        res.status(500).json({
+            message: "Something went wrong",
+    });
+    });
+}
+
+
+
 module.exports = {
-    signUp: signUp
+    signUp: signUp,
+    login: login
 }
