@@ -19,10 +19,7 @@ function signUp(req, res){
                     const user = {
                         name: req.body.name,
                         email: req.body.email,
-                        password: hash,
-                        role: req.body.role,
-        
-                         
+                        password: hash
                      }
                  
                      models.User.create(user).then(result => {
@@ -62,7 +59,7 @@ function login(req, res){
                         email: user.email,
                         userId: user.userId,
                         role: user.role
-                    }, 'secret', function(err, token){
+                    }, process.env.JWT_KEY, function(err, token){
                         res.status(200).json({
                             message: "Authentication succesful!",
                             token: token
