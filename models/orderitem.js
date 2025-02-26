@@ -1,26 +1,39 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
+const { Model, DataTypes } = require('sequelize');
+
+module.exports = (sequelize) => {
   class OrderItem extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
+      // Define associations
+      OrderItem.belongsTo(models.Order, { foreignKey: 'orderId', onDelete: 'CASCADE' });
+      OrderItem.belongsTo(models.Menu, { foreignKey: 'menuId', onDelete: 'CASCADE' });
     }
   }
+
   OrderItem.init({
-    orderId: DataTypes.INTEGER,
-    menuId: DataTypes.INTEGER,
-    quantity: DataTypes.INTEGER,
-    price: DataTypes.FLOAT
+    orderId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    menuId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    quantity: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    price: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    }
   }, {
     sequelize,
     modelName: 'OrderItem',
+    tableName: 'order_items', // Ensure it matches the database table name
+    timestamps: true,  // Enables createdAt & updatedAt
+    underscored: false // Use camelCase for Sequelize
   });
+
   return OrderItem;
 };
