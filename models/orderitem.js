@@ -5,8 +5,8 @@ module.exports = (sequelize) => {
   class OrderItem extends Model {
     static associate(models) {
       // Define associations
-      OrderItem.belongsTo(models.Order, { foreignKey: 'orderId', onDelete: 'CASCADE' });
-      OrderItem.belongsTo(models.Menu, { foreignKey: 'menuId', onDelete: 'CASCADE' });
+      OrderItem.belongsTo(models.Order, { foreignKey: 'orderId', as: 'order', onDelete: 'CASCADE' });
+      OrderItem.belongsTo(models.Menu, { foreignKey: 'menuId', as: 'menu', onDelete: 'CASCADE' });
     }
   }
 
