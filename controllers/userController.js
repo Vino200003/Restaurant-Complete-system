@@ -83,11 +83,11 @@ function login(req, res) {
                         const token = jwt.sign(
                             {
                                 email: user.email,
-                                userId: user.id, // Use `id` instead of `userId`
+                                userId: user.id,
                                 role: user.role
                             },
-                            process.env.JWT_KEY, // Ensure this is defined in .env
-                            { expiresIn: '1h' } // Token expiration time
+                            process.env.JWT_KEY,
+                            { expiresIn: '1h' }
                         );
 
                         res.status(200).json({
@@ -111,9 +111,186 @@ function login(req, res) {
         });
 }
 
+// Get all users
+function getAllUsers(req, res) {
+    models.User.findAll({
+        attributes: { exclude: ['password'] } // Exclude password for security
+    })
+    .then(users => {
+        if (users.length === 0) {
+            return res.status(404).json({
+                message: "No users found"
+            });
+        }
+        res.status(200).json(users);
+    })
+    .catch(error => {
+        console.error('Error fetching users:', error);
+        res.status(500).json({
+            message: "Something went wrong",
+            error: error.message
+        });
+    });
+}
 
+// Get user by ID
+function getUserById(req, res) {
+    const id = req.params.id;
+    
+    models.User.findByPk(id, {
+        attributes: { exclude: ['password'] } // Exclude password for security
+    })
+    .then(user => {
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+        res.status(200).json(user);
+    })
+    .catch(error => {
+        console.error('Error fetching user:', error);
+        res.status(500).json({
+            message: "Something went wrong",
+            error: error.message
+        });
+    });
+}
+
+// Get users by role
+function getUsersByRole(req, res) {
+    const role = req.params.role;
+    
+    // Validate role against the ENUM values in your model
+    const validRoles = ['customer', 'kitchen_staff', 'delivery_person', 'admin'];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({
+            message: "Invalid role specified"
+        });
+    }
+    
+    models.User.findAll({
+        where: { role: role },
+        attributes: { exclude: ['password'] } // Exclude password for security
+    })
+    .then(users => {
+        if (users.length === 0) {
+            return res.status(404).json({
+                message: `No users with role '${role}' found`
+            });
+        }
+        res.status(200).json(users);
+    })
+    .catch(error => {
+        console.error('Error fetching users by role:', error);
+        res.status(500).json({
+            message: "Something went wrong",
+            error: error.message
+        });
+    });
+}
+
+// Update user
+function updateUser(req, res) {
+    const id = req.params.id;
+    const updates = {};
+    
+    // Only update fields that are provided
+    if (req.body.name) updates.name = req.body.name;
+    if (req.body.email) updates.email = req.body.email;
+    if (req.body.role) updates.role = req.body.role;
+    
+    // Handle password update separately if provided
+    if (req.body.password) {
+        bcryptjs.genSalt(10, function(err, salt) {
+            if (err) {
+                return res.status(500).json({
+                    message: "Error generating salt"
+                });
+            }
+            
+            bcryptjs.hash(req.body.password, salt, function(err, hash) {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error hashing password"
+                    });
+                }
+                
+                updates.password = hash;
+                performUpdate();
+            });
+        });
+    } else {
+        performUpdate();
+    }
+    
+    function performUpdate() {
+        models.User.findByPk(id)
+            .then(user => {
+                if (!user) {
+                    return res.status(404).json({
+                        message: "User not found"
+                    });
+                }
+                
+                return user.update(updates);
+            })
+            .then(updatedUser => {
+                if (updatedUser) {
+                    // Create a safe version of the user without password
+                    const safeUser = updatedUser.toJSON();
+                    delete safeUser.password;
+                    
+                    res.status(200).json({
+                        message: "User updated successfully",
+                        user: safeUser
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error updating user:', error);
+                res.status(500).json({
+                    message: "Something went wrong",
+                    error: error.message
+                });
+            });
+    }
+}
+
+// Delete user
+function deleteUser (req, res) {
+    const id = req.params.id;
+
+    models.User.findByPk(id)
+        .then(user => {
+            if (!user) {
+                return res.status(404).json({
+                    message: "User  not found"
+                });
+            }
+
+            return user.destroy();
+        })
+        .then(() => {
+            res.status(200).json({
+                message: "User  deleted successfully"
+            });
+        })
+        .catch(error => {
+            console.error('Error deleting user:', error);
+            res.status(500).json({
+                message: "Something went wrong",
+                error: error.message
+            });
+        });
+}
 
 module.exports = {
     signUp: signUp,
-    login: login
-}
+    login: login,
+    getAllUsers: getAllUsers,
+    getUserById: getUserById,
+    getUsersByRole: getUsersByRole,
+    updateUser:  updateUser ,
+    deleteUser:  deleteUser  
+};

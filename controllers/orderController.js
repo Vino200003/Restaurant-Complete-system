@@ -45,11 +45,20 @@ async function createOrder(req, res) {
     }
 }
 
+
+
 // Get all orders
 async function getAllOrders(req, res) {
     try {
         const orders = await models.Order.findAll({
-            include: [{ model: models.OrderItem, include: [{ model: models.Menu }] }],
+            include: [{ 
+                model: models.OrderItem, 
+                as: 'orderItems', 
+                include: [{ 
+                    model: models.Menu, 
+                    as: 'menu' 
+                }] 
+            }],
         });
 
         if (orders.length === 0) {
@@ -67,7 +76,14 @@ async function getOrderById(req, res) {
     try {
         const { id } = req.params;
         const order = await models.Order.findByPk(id, {
-            include: [{ model: models.OrderItem, include: [{ model: models.Menu }] }],
+            include: [{ 
+                model: models.OrderItem, 
+                as: 'orderItems', 
+                include: [{ 
+                    model: models.Menu, 
+                    as: 'menu' 
+                }] 
+            }],
         });
 
         if (!order) {
